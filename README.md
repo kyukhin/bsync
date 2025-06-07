@@ -1,15 +1,17 @@
 # Backup Synchronization Script with Telegram Notifications
 
-A Python script that synchronizes backup data between two servers using rsync over SSH and sends status notifications via Telegram.
+A Python script that synchronizes backup data from a remote server to local storage using rsync over SSH and sends status notifications via Telegram.
 
 ## Features
 
-- 🔄 Automated rsync backup from server A to server B
+- 🔄 Automated rsync backup from remote source to local destination
+- 📂 Multiple directory synchronization with individual settings
 - 📱 Telegram notifications for sync status (start, success, failure)
 - 📊 Detailed sync statistics (files transferred, data size, duration)
+- 📁 **File change tracking** - see exactly which files were added, updated, or deleted
 - 🔒 SSH key-based authentication
 - 📝 Comprehensive logging
-- ⚙️ Configurable exclusions and timeouts
+- ⚙️ Configurable exclusions and timeouts per directory
 - 🕐 Cron job ready for daily scheduling
 
 ## Prerequisites
@@ -26,6 +28,13 @@ A Python script that synchronizes backup data between two servers using rsync ov
 ```bash
 git clone <your-repo-url>
 cd backup-sync
+
+# Run automated installation (recommended)
+./install.sh
+
+# OR manual setup with virtual environment
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -79,32 +88,25 @@ ssh -i ~/.ssh/id_rsa user@server-b.example.com
 
 1. Copy the configuration template:
    ```bash
-   # For multiple directories (recommended)
    cp config.json.template config.json
-   
-   # OR for single directory (simple setup)
-   cp config.simple.json.template config.json
    ```
 
 2. Edit `config.json` with your settings:
-
-   **Multiple Directories (Recommended):**
    ```json
    {
-     "source_server": "user@server-a.example.com",
-     "dest_server": "user@server-b.example.com",
+     "source_server": "user@backup-server.example.com",
      "ssh_key_path": "/home/user/.ssh/id_rsa",
      "directories": [
        {
          "name": "Main Backup",
-         "source_path": "/home/user/backups",
-         "dest_path": "/home/user/backups",
+         "source_path": "/var/backups/main",
+         "dest_path": "/home/user/backups/main",
          "exclusions": ["*.log", "*.tmp"]
        },
        {
          "name": "Documents",
-         "source_path": "/home/user/documents",
-         "dest_path": "/home/user/documents",
+         "source_path": "/home/users/documents",
+         "dest_path": "/home/user/backups/documents",
          "exclusions": ["~*", "*.tmp"]
        }
      ],
@@ -112,23 +114,6 @@ ssh -i ~/.ssh/id_rsa user@server-b.example.com
        "bot_token": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
        "chat_id": "-123456789"
      },
-     "timeout": 3600
-   }
-   ```
-
-   **Single Directory (Legacy format):**
-   ```json
-   {
-     "source_server": "user@server-a.example.com",
-     "dest_server": "user@server-b.example.com",
-     "source_path": "/home/user/backups",
-     "dest_path": "/home/user/backups",
-     "ssh_key_path": "/home/user/.ssh/id_rsa",
-     "telegram": {
-       "bot_token": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
-       "chat_id": "-123456789"
-     },
-     "exclusions": ["*.log", "*.tmp"],
      "timeout": 3600
    }
    ```
@@ -181,34 +166,20 @@ Add to crontab:
 
 ## Configuration Options
 
-### Main Configuration
+## Configuration Options
 
 | Option | Description | Required |
 |--------|-------------|----------|
 | `source_server` | SSH connection to source server | Yes |
-| `dest_server` | SSH connection to destination server | Yes |
 | `ssh_key_path` | Path to SSH private key | Yes |
+| `directories` | Array of directory configurations | Yes |
+| `directories[].name` | Friendly name for the directory | Yes |
+| `directories[].source_path` | Source directory path on remote server | Yes |
+| `directories[].dest_path` | Destination directory path on local server | Yes |
+| `directories[].exclusions` | Files/patterns to exclude for this directory | No |
 | `telegram.bot_token` | Telegram bot token | Yes |
 | `telegram.chat_id` | Telegram chat ID | Yes |
 | `timeout` | Rsync timeout in seconds | No (default: 3600) |
-
-### Directory Configuration
-
-**Multiple Directories Format:**
-| Option | Description | Required |
-|--------|-------------|----------|
-| `directories` | Array of directory configurations | Yes |
-| `directories[].name` | Friendly name for the directory | Yes |
-| `directories[].source_path` | Source directory path | Yes |
-| `directories[].dest_path` | Destination directory path | Yes |
-| `directories[].exclusions` | Files/patterns to exclude for this directory | No |
-
-**Legacy Single Directory Format:**
-| Option | Description | Required |
-|--------|-------------|----------|
-| `source_path` | Source directory path | Yes |
-| `dest_path` | Destination directory path | Yes |
-| `exclusions` | Files/patterns to exclude | No |
 
 ## Log Files
 
@@ -250,6 +221,22 @@ Rsync command timed out
 - Check network connectivity between servers
 - Monitor large file transfers
 
+**5. Python Package Installation Issues**
+```
+error: externally-managed-environment
+```
+This happens on modern Python installations. Solutions:
+- **Recommended**: Use virtual environment (automatic with `./install.sh`)
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -r requirements.txt
+  ```
+- **Alternative**: Use system override (not recommended)
+  ```bash
+  pip install -r requirements.txt --break-system-packages
+  ```
+
 ### Debugging
 
 Enable verbose logging by modifying the script:
@@ -282,15 +269,15 @@ rsync -avz --progress --stats --delete -e "ssh -i /path/to/key" user@source:/pat
 📅 Time: 2024-01-15 02:00:15
 📁 Directories: 3
 
-📂 Main Backup: /home/user/backups → /home/user/backups
-📂 Documents: /home/user/documents → /home/user/documents
-📂 Web Files: /var/www/html → /var/www/html
+📂 Main Backup: /var/backups/main → /home/user/backups/main
+📂 Documents: /home/users/documents → /home/user/backups/documents
+📂 Database Dumps: /var/backups/databases → /home/user/backups/databases
 
-Source Server: user@server-a.example.com
-Destination Server: user@server-b.example.com
+Source Server: user@backup-server.example.com
+Destination: Local (this server)
 ```
 
-**Success Notification (Multiple Directories):**
+**Success Notification (Multiple Directories with File Changes):**
 ```
 🟢 Backup Sync Successful
 
@@ -304,13 +291,28 @@ Destination Server: user@server-b.example.com
    📊 Transferred: 25 files
    💾 Size: 2.1 GB
    📤 Sent: 85.3 MB
+   ➕ Added: 3 files
+      • photos/2024/IMG_001.jpg
+      • photos/2024/IMG_002.jpg
+      • documents/report.pdf
+   🔄 Updated: 2 files
+      • config/settings.json
+      • logs/backup.log
+   🗑️ Deleted: 1 files
+      • temp/old_cache.tmp
 
 📂 Documents
    ⏱️ Duration: 0:12:10
-   🗂️ Files: 567 (reg: 555, dir: 12) 
+   🗂️ Files: 567 (reg: 555, dir: 12)
    📊 Transferred: 15 files
    💾 Size: 450.2 MB
    📤 Sent: 25.8 MB
+   ➕ Added: 5 files
+      • projects/new_project.docx
+      • invoices/2024-001.pdf
+      • contracts/client_a.pdf
+      ... and 2 more
+   ✅ No deletions
 
 📂 Web Files
    ⏱️ Duration: 0:08:05
@@ -318,6 +320,7 @@ Destination Server: user@server-b.example.com
    📊 Transferred: 5 files
    💾 Size: 125.7 MB
    📤 Sent: 14.6 MB
+   ✅ No changes (files up to date)
 ```
 
 **Partial Success Notification:**
@@ -330,14 +333,16 @@ Destination Server: user@server-b.example.com
 ❌ Failed: 1
 
 Successful:
-📂 Main Backup (25 files)
-📂 Documents (15 files)
+📂 Main Backup (+3 ~2 -1)
+📂 Documents (+5)
 
 Failed:
 📂 Web Files
 
 Please check the logs for error details.
 ```
+
+*Legend: +added ~updated -deleted*
 
 **Failure Notification:**
 ```
@@ -368,4 +373,4 @@ Feel free to submit issues and pull requests to improve the script.
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.

@@ -83,10 +83,19 @@ else
     echo "  - macOS: brew install rsync"
 fi
 
-# Install Python dependencies
-print_info "Installing Python dependencies..."
-if pip3 install -r requirements.txt; then
-    print_success "Python dependencies installed"
+# Create and activate virtual environment
+print_info "Setting up Python virtual environment..."
+if python3 -m venv venv; then
+    print_success "Virtual environment created"
+else
+    print_error "Failed to create virtual environment"
+    exit 1
+fi
+
+# Activate virtual environment and install dependencies
+print_info "Installing Python dependencies in virtual environment..."
+if source venv/bin/activate && pip install -r requirements.txt; then
+    print_success "Python dependencies installed in virtual environment"
 else
     print_error "Failed to install Python dependencies"
     exit 1
@@ -95,18 +104,24 @@ fi
 # Create configuration file
 print_info "Setting up configuration..."
 if [ ! -f "config.json" ]; then
-    cp config.json.template config.json
-    chmod 600 config.json
-    print_success "Configuration file created from template"
-    print_warning "Please edit config.json with your server details and Telegram credentials"
+    if [ -f "config.json.template" ]; then
+        cp config.json.template config.json
+        chmod 600 config.json
+        print_success "Configuration file created from template"
+        print_warning "Please edit config.json with your server details and Telegram credentials"
+    else
+        print_error "Configuration template not found!"
+        exit 1
+    fi
 else
     print_warning "config.json already exists, skipping template copy"
 fi
 
-# Make scripts executable
-print_info "Making scripts executable..."
+# Update scripts to use virtual environment Python
+print_info "Configuring scripts to use virtual environment..."
+sed -i.bak "1s|.*|#!$(pwd)/venv/bin/python3|" backup_sync.py
 chmod +x backup_sync.py run_backup_sync.sh
-print_success "Scripts are now executable"
+print_success "Scripts configured and made executable"
 
 # Create log directory
 print_info "Setting up logging..."
@@ -172,4 +187,4 @@ else
 fi
 
 echo ""
-print_info "Installation log saved in /tmp/backup_sync_install.log" 
+print_info "Installation log saved in /tmp/backup_sync_install.log"

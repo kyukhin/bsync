@@ -7,7 +7,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_SCRIPT="$SCRIPT_DIR/backup_sync.py"
 CONFIG_FILE="$SCRIPT_DIR/config.json"
-LOG_FILE="/var/log/backup_sync_cron.log"
+LOG_FILE="./backup_sync_cron.log"
 
 # Function to log messages with timestamp
 log_message() {
@@ -35,16 +35,22 @@ cd "$SCRIPT_DIR" || {
 # Set PATH to ensure we can find Python and other tools
 export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
 
-# Find Python 3
+# Find Python 3 (prefer virtual environment)
 PYTHON_CMD=""
-for cmd in python3 python; do
-    if command -v "$cmd" &> /dev/null; then
-        if "$cmd" -c "import sys; exit(0 if sys.version_info >= (3, 6) else 1)" 2>/dev/null; then
-            PYTHON_CMD="$cmd"
-            break
+if [ -f "$SCRIPT_DIR/venv/bin/python3" ]; then
+    PYTHON_CMD="$SCRIPT_DIR/venv/bin/python3"
+    log_message "Using virtual environment Python: $PYTHON_CMD"
+else
+    # Fallback to system Python
+    for cmd in python3 python; do
+        if command -v "$cmd" &> /dev/null; then
+            if "$cmd" -c "import sys; exit(0 if sys.version_info >= (3, 6) else 1)" 2>/dev/null; then
+                PYTHON_CMD="$cmd"
+                break
+            fi
         fi
-    fi
-done
+    done
+fi
 
 if [ -z "$PYTHON_CMD" ]; then
     log_message "ERROR: Python 3.6+ not found"
@@ -67,4 +73,4 @@ else
     log_message "Backup synchronization failed with exit code $EXIT_CODE"
 fi
 
-exit $EXIT_CODE 
+exit $EXIT_CODE
