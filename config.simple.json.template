@@ -1,0 +1,30 @@
+{
+  "source_server": "user@server-a.example.com",
+  "dest_server": "user@server-b.example.com",
+  "source_path": "/home/user/backups",
+  "dest_path": "/home/user/backups",
+  "ssh_key_path": "/home/user/.ssh/id_rsa",
+  "telegram": {
+    "bot_token": "YOUR_BOT_TOKEN_HERE",
+    "chat_id": "YOUR_CHAT_ID_HERE"
+  },
+  "exclusions": [
+    "*.log",
+    "*.tmp",
+    ".DS_Store",
+    "Thumbs.db"
+  ],
+  "timeout": 3600,
+  "comments": {
+    "note": "This is the simple/legacy format for syncing a single directory",
+    "source_server": "SSH connection string to source server (server A)",
+    "dest_server": "SSH connection string to destination server (server B)",
+    "source_path": "Absolute path to backup folder on source server",
+    "dest_path": "Absolute path to destination folder on destination server",
+    "ssh_key_path": "Path to SSH private key for authentication",
+    "telegram.bot_token": "Telegram bot token from @BotFather",
+    "telegram.chat_id": "Telegram chat ID where notifications will be sent",
+    "exclusions": "List of patterns to exclude from sync",
+    "timeout": "Timeout for rsync operation in seconds (optional, default 3600)"
+  }
+} 

@@ -1,0 +1,56 @@
+{
+  "source_server": "user@server-a.example.com",
+  "dest_server": "user@server-b.example.com",
+  "ssh_key_path": "/home/user/.ssh/id_rsa",
+  "directories": [
+    {
+      "name": "Main Backup",
+      "source_path": "/home/user/backups",
+      "dest_path": "/home/user/backups",
+      "exclusions": [
+        "*.log",
+        "*.tmp",
+        ".DS_Store",
+        "Thumbs.db"
+      ]
+    },
+    {
+      "name": "Documents",
+      "source_path": "/home/user/documents",
+      "dest_path": "/home/user/documents",
+      "exclusions": [
+        "*.tmp",
+        "~*"
+      ]
+    },
+    {
+      "name": "Web Files",
+      "source_path": "/var/www/html",
+      "dest_path": "/var/www/html",
+      "exclusions": [
+        "*.log",
+        "cache/*",
+        "sessions/*"
+      ]
+    }
+  ],
+  "telegram": {
+    "bot_token": "YOUR_BOT_TOKEN_HERE",
+    "chat_id": "YOUR_CHAT_ID_HERE"
+  },
+  "timeout": 3600,
+  "comments": {
+    "source_server": "SSH connection string to source server (server A)",
+    "dest_server": "SSH connection string to destination server (server B)",
+    "ssh_key_path": "Path to SSH private key for authentication",
+    "directories": "List of directories to sync with individual settings",
+    "directories[].name": "Friendly name for the directory (for notifications)",
+    "directories[].source_path": "Absolute path to source directory on source server",
+    "directories[].dest_path": "Absolute path to destination directory on destination server",
+    "directories[].exclusions": "List of patterns to exclude for this directory",
+    "telegram.bot_token": "Telegram bot token from @BotFather",
+    "telegram.chat_id": "Telegram chat ID where notifications will be sent",
+    "timeout": "Timeout for rsync operation in seconds (optional, default 3600)",
+    "legacy_format": "You can still use single 'source_path' and 'dest_path' instead of 'directories' array"
+  }
+} 
